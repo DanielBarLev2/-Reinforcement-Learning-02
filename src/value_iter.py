@@ -83,8 +83,18 @@ def value_iteration(mdp, gamma, nIt):
         #     corresponding to the math above: V^{(it+1)} = T[V^{(it)}]
         #     ** numpy array of floats **
 
-        V = Vprev # REPLACE THIS LINE WITH YOUR CODE
-        pi = oldpi # REPLACE THIS LINE WITH YOUR CODE
+        V = np.zeros(mdp.nS)
+        pi = np.empty(mdp.nS)
+
+        for state in range(mdp.nS):
+            q_vals = np.zeros(mdp.nA)
+            for action in range(mdp.nA):
+                 for next_state in mdp.P[state][action]:
+                    p, s_tag, r = next_state
+                    q_vals[action] += p * (r + gamma * Vprev[s_tag])
+
+            V[state] = q_vals.max()
+            pi[state] = q_vals.argmax()
 
         max_diff = np.abs(V - Vprev).max()
         nChgActions="N/A" if oldpi is None else (pi != oldpi).sum()
@@ -121,3 +131,18 @@ for (V, pi) in zip(Vs_VI[:10], pis_VI[:10]):
                      color='g', size=12,  verticalalignment='center',
                      horizontalalignment='center', fontweight='bold')
     plt.grid(color='b', lw=2, ls='-')
+    plt.show()
+
+
+Vs_arr = np.vstack(Vs_VI)
+iters  = np.arange(Vs_arr.shape[0])
+
+plt.figure(figsize=(6,4))
+for s in range(mdp.nS):
+    plt.plot(iters, Vs_arr[:, s], label=f"S{s}")
+plt.xlabel("Iteration")
+plt.ylabel("State value  V(s)")
+plt.title("FrozenLake value-iteration convergence")
+plt.legend(ncol=4, fontsize=8, bbox_to_anchor=(1.02, 1.0))
+plt.tight_layout()
+plt.show()
