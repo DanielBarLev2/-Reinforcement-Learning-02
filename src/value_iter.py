@@ -84,7 +84,7 @@ def value_iteration(mdp, gamma, nIt):
         #     ** numpy array of floats **
 
         V = np.zeros(mdp.nS)
-        pi = np.empty(mdp.nS)
+        pi = np.empty(mdp.nS, dtype=int)
 
         for state in range(mdp.nS):
             q_vals = np.zeros(mdp.nA)

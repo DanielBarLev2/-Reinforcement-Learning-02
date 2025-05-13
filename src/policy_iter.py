@@ -58,8 +58,17 @@ print("")
 # Programing Question No. 2, part 1 - implement where required.
 
 def compute_vpi(pi, mdp, gamma):
-    # use pi[state] to access the action that's prescribed by this policy
-    V = np.ones(mdp.nS) # REPLACE THIS LINE WITH YOUR CODE
+    nS = mdp.nS
+    A = np.eye(nS)
+    b = np.zeros(nS)
+
+    for state in range(nS):
+        action = pi[state]
+        for p, next_state, r in mdp.P[state][action]:
+            A[state, next_state] -= gamma * p
+            b[state] += p * r
+
+    V = np.linalg.solve(A, b)
     return V
 
 actual_val = compute_vpi(np.arange(16) % mdp.nA, mdp, gamma=GAMMA)
@@ -69,8 +78,12 @@ print("Policy Value: ", actual_val)
 # Programing Question No. 2, part 2 - implement where required.
 
 def compute_qpi(vpi, mdp, gamma):
-    Qpi = np.zeros([mdp.nS, mdp.nA]) # REPLACE THIS LINE WITH YOUR CODE
-    return Qpi
+    Q = np.zeros((mdp.nS, mdp.nA))
+    for state in range(mdp.nS):
+        for action in range(mdp.nA):
+            for p, next_state, r in mdp.P[state][action]:
+                Q[state, action] += p * (r + gamma * vpi[next_state])
+    return Q
 
 Qpi = compute_qpi(np.arange(mdp.nS), mdp, gamma=0.95)
 print("Policy Action Value: ", actual_val)
@@ -82,20 +95,39 @@ print("Policy Action Value: ", actual_val)
 def policy_iteration(mdp, gamma, nIt):
     Vs = []
     pis = []
-    pi_prev = np.zeros(mdp.nS,dtype='int')
+    pi_prev = np.zeros(mdp.nS, dtype=int)
     pis.append(pi_prev)
     print("Iteration | # chg actions | V[0]")
     print("----------+---------------+---------")
     for it in range(nIt):
-        # YOUR CODE HERE
-        # you need to compute qpi which is the state-action values for current pi
+        vpi = compute_vpi(pi_prev, mdp, gamma)
+        qpi = compute_qpi(vpi, mdp, gamma)
         pi = qpi.argmax(axis=1)
-        print("%4i      | %6i        | %6.5f"%(it, (pi != pi_prev).sum(), vpi[0]))
+
+        delta_actions = (pi != pi_prev).sum()
+        print(f"{it:4d}      | {delta_actions:6d}        | {vpi[0]:6.5f}")
+
         Vs.append(vpi)
         pis.append(pi)
+
+        if delta_actions == 0:
+            break
         pi_prev = pi
+
     return Vs, pis
 
 
 Vs_PI, pis_PI = policy_iteration(mdp, gamma=0.95, nIt=20)
-plt.plot(Vs_PI);
+
+Vs_arr = np.vstack(Vs_PI)        # shape (iters, 16)
+iters  = np.arange(Vs_arr.shape[0])
+
+plt.figure(figsize=(6,4))
+for s in range(mdp.nS):
+    plt.plot(iters, Vs_arr[:, s], label=f"S{s}")
+plt.xlabel("Iteration")
+plt.ylabel("State value  V(s)")
+plt.title("FrozenLake policy-iteration convergence")
+plt.legend(ncol=4, fontsize=8, bbox_to_anchor=(1.02, 1.0))
+plt.tight_layout()
+plt.show()
